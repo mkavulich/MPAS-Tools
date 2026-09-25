@@ -2314,15 +2314,15 @@ int buildMeshQualities(){/*{{{*/
 #endif
 
 					angle1 = acos( max(-1.0, min(1.0, (b_len * b_len + c_len * c_len - a_len * a_len) / (2 * b_len * c_len))));
-					angle2 = acos( max(-1.0, min(1.0, (a_len * a_len + c_len * c_len - b_len * c_len) / (2 * a_len * c_len))));
+					angle2 = acos( max(-1.0, min(1.0, (a_len * a_len + c_len * c_len - b_len * b_len) / (2 * a_len * c_len))));
 					angle3 = acos( max(-1.0, min(1.0, (a_len * a_len + b_len * b_len - c_len * c_len) / (2 * a_len * b_len))));
 
 					minAngle = min(angle1, min(angle2, angle3));
 					maxAngle = max(angle1, max(angle2, angle3));
 
 					if ( maxAngle > M_PI_2 ) {
+						if ( !obtuse ) obtuseTriangles++;
 						obtuse = 1;
-						obtuseTriangles++;
 					}
 
 					triangleAngleQuality.at(iVertex) = minAngle / maxAngle;
@@ -3261,6 +3261,15 @@ int outputMeshQualities( const string outputFilename) {/*{{{*/
 	if (!cellQualityVar->put(&cellQuality.at(0), nCells)) return NC_ERR;
 
 	// Write gridSpacing
+	// gridSpacing is accumulated from dcEdge while the mesh is still on the
+	// unit sphere, so scale it here the way outputEdgeParameters scales dcEdge
+	// itself -- otherwise it would be the only length in the file not
+	// expressed in metres.
+	if(spherical){
+		for(size_t iCell = 0; iCell < gridSpacing.size(); iCell++){
+			gridSpacing.at(iCell) = gridSpacing.at(iCell) * sphereRadius;
+		}
+	}
 	if (!(gridSpacingVar = grid.add_var("gridSpacing", ncDouble, nCellsDim))) return NC_ERR;
 	if (!gridSpacingVar->put(&gridSpacing.at(0), nCells)) return NC_ERR;
 
